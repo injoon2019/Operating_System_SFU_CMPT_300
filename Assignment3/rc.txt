@@ -1,0 +1,62 @@
+
+
+sem whoisLoaded;
+sem loadingcomplete = 0;
+
+mutex Loadedchildren=0;
+mutex Loadedadults=0;
+mutex OccupiedSeats=0;
+
+int childrenLoaded=0;
+int adultsLoaded=0;
+int total_seats = 6;
+int seatsOccupied=0;
+
+void child(){
+	
+	if (childrenLoaded<4 && seatsOccupied <=6 ){
+
+		semWait (&child_capcity); //decrement to 3,2,1,0. if another child arrives and sets it to -1,it's 								  //blocked. 
+
+		semWait (&whoisLoaded); // Block other processe from loading while the current one is loading. 
+		load(); 
+
+		mutexWait(&Loadedchildren);
+		adultsLoaded++;					// increment the # of adults loaded 
+		mutexSignal(&Loadedchildren);
+
+		mutexWait (&OccupiedSeats);
+		seatsOccupied++;
+		mutexSignal (&OccupiedSeats);
+
+		semSignal(&whoisLoaded); // Let other processes load
+
+		semWait(&loadingcomplete); //last passenger decrements to -6 
+		if (seatsOccupied=6){
+			semSignal(&loading complete);
+		}
+
+}
+
+void adult(){
+
+	if (adultsLoaded<2 && seatsOccpupied <=6){ 
+
+		semWait(&whoisLoaded); //if loadingcomplete<0, other processes blocked from loading.
+		load();
+
+		mutexWait(&Loadedadults);
+		adultsLoaded++;					// increment the # of adults loaded 
+		mutexSignal(&Loadedadults);
+
+		mutexWait (&OccupiedSeats); 
+		seatsOccupied++; 				// increment the # of seats occupied
+		mutexSignal (&OccupiedSeats);
+
+		semSignal(&whoisLoaded); // Let other processes load
+
+		semWait(&loadingcomplete); //last passenger decrements to -6 
+		if (seatsOccupied=6){
+			semSignal(&loading complete);
+	}
+}

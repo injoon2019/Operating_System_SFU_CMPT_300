@@ -1,0 +1,1 @@
+gcc -pthread -o assign2 assignment2.c 

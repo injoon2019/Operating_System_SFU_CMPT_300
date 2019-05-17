@@ -1,0 +1,10 @@
+No, the queue referred to in the problem in the waiting queue of a semaphore or mutex.  
+This is created when the mutex is created and is not directly accessed.  
+You just wait an signal the mutexes and semaphores.
+ 
+There will be no further extension.  
+The assignment was shortened to take into account the fact it was posted less than two weeks before the due date.
+ 
+You switch to another thread by blocking the present thread (waiting a mutex or semaphore to place the thread in the waiting queue of that mutex or semaphore.  
+
+You can also use sched_yield to yield to another thread

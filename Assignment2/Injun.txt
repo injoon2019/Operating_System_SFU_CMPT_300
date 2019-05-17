@@ -1,0 +1,175 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/time.h> 
+#include <pthread.h>
+#include <semaphore.h>
+
+sem_t car_queue, truck_queue, car_loaded, truck_loaded, car_sailing, truck_sailing, car_unloaded, truck_unloaded; //8 counters
+sem_t protect_car_queue, protect_truck_queue, protect_car_loaded, protect_truck_loaded;	// Mutexes to protect each counter 
+sem_t simulation_time, captatin_first;
+
+//to send more than one parameter to crateVehicle thread, I made a struct.
+struct arg_struct {
+    int probability_vehicle_truck;
+    int max_length_interval;
+    int seed;
+};
+
+void* createCar(void* arg)	
+{
+	//To print thread ID
+	pid_t threadID = pthread_self();
+	//threadID = pthread_getthreadid_np();
+	printf("CAR:      	    Car with threadID %d queued\n", threadID);
+}
+
+void* createTruck(void* arg)	
+{
+	//To print thread ID
+	//pthread_id_np_t   threadID;
+	//threadID = pthread_getthreadid_np();
+	pid_t threadID = pthread_self();
+	printf("TRUCK:      	    Truck with threadID %d queued\n", threadID);
+
+}
+
+void* createCaptatin(void* arg)
+{
+
+        //sem_wait(&captatin_first);
+        printf("CAPTAIN:  	    Captain thread started\n");
+        //sem_post(&captatin_first);
+}
+
+
+
+void* createVehicle(void* arg)	/*createVehicle thread*/
+{
+	struct arg_struct *args = (struct arg_struct *)arg;
+	int probability_vehicle_truck= args->probability_vehicle_truck;
+	int max_length_interval = args->max_length_interval;
+	int seed = args->seed;
+	struct timeval t1, t2;
+
+	printf("CREATEVEHICLE:      Vehicle creation thread has been started\n");
+	srand(seed);
+	int next_arrival_time=0;
+	int elapsed_time=0;
+	gettimeofday(&t1, NULL);
+
+	gettimeofday(&t2, NULL);
+		//calculate elapsed time
+		elapsed_time =(t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+	    elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0; 
+
+	    //When the elapsed time exceeds the next arrival time completes steps 3 to 8
+	    while( elapsed_time < next_arrival_time){
+	    	//calculate elapsed time
+	    	gettimeofday(&t2, NULL);
+			elapsed_time =(t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+	  	    elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0; 
+	    };
+
+		printf("CREATEVEHICLE:      Elapsed time %d msec\n", elapsed_time);
+		//Determine when the next vehicle should arrive. 1000<= wait till next vehicle <= k
+		next_arrival_time = ( rand()% (max_length_interval-1000)+ 1001) + elapsed_time;
+		printf("CREATEVEHICLE:      Next arrival time %d msec\n", next_arrival_time);
+
+	while(1){
+
+
+		//if random integer <= probability then the vehicle is a truck
+		if( rand()%101 <= probability_vehicle_truck)	//case : truck
+		{
+			gettimeofday(&t2, NULL);
+		//calculate elapsed time
+		elapsed_time =(t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+	    elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0; 
+
+	    //When the elapsed time exceeds the next arrival time completes steps 3 to 8
+	    while( elapsed_time < next_arrival_time){
+	    	//calculate elapsed time
+	    	gettimeofday(&t2, NULL);
+			elapsed_time =(t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+	  	    elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0; 
+	    };
+
+		printf("CREATEVEHICLE:      Elapsed time %d msec\n", elapsed_time);
+
+		pthread_t create_truck;	//Create a thread to create_truck
+		pthread_create(&create_truck, NULL, createTruck, NULL);
+		printf("CREATEVEHICLE:      Created a truck thread\n");
+
+		//Determine when the next vehicle should arrive. 1000<= wait till next vehicle <= k
+		next_arrival_time = ( rand()% (max_length_interval-1000)+ 1001) + elapsed_time;
+		printf("CREATEVEHICLE:      Next arrival time %d msec\n", next_arrival_time);
+
+
+			pthread_join(create_truck, NULL);
+		}
+		else 		//case: car
+		{
+			gettimeofday(&t2, NULL);
+			//calculate elapsed time
+			elapsed_time =(t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+		    elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0; 
+
+		    //When the elapsed time exceeds the next arrival time completes steps 3 to 8
+		    while( elapsed_time < next_arrival_time){
+		    	//calculate elapsed time
+		    	gettimeofday(&t2, NULL);
+				elapsed_time =(t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+		  	    elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0; 
+		    };
+
+			printf("CREATEVEHICLE:      Elapsed time %d msec\n", elapsed_time);
+			pthread_t create_car;	//Create a thread to create_truck
+			pthread_create(&create_car, NULL, createCar, NULL);
+			printf("CREATEVEHICLE:      Created a car thread\n");
+
+			//Determine when the next vehicle should arrive. 1000<= wait till next vehicle <= k
+			next_arrival_time = ( rand()% (max_length_interval-1000)+ 1001) + elapsed_time;
+			printf("CREATEVEHICLE:      Next arrival time %d msec\n", next_arrival_time);
+
+
+			pthread_join(create_car, NULL);
+		}
+	}
+
+
+}
+
+
+int main(int argc, char* argv[])
+{
+	 // initialize semaphore, only to be used with threads in this process, set value to 1
+    sem_init(&captatin_first, 0, 1);
+
+	int probability_vehicle_truck=0, max_length_interval, seed;
+	printf("Please enter integer values for the following variables\n");
+	printf("Enter the percent probability that the next vehicle is a truck\n");
+	scanf("%d", &probability_vehicle_truck);
+	printf("Enter the maximum length of the interval between vehicles time interval should be >1000 but <5000\n");
+	scanf("%d", &max_length_interval);
+	printf("Enter the seed for random number generation (2<seed<%d\n", RAND_MAX);
+	scanf("%d",&seed);
+
+	struct arg_struct args ={probability_vehicle_truck, max_length_interval, seed};
+	pthread_t create_vehicle;	//Create a thread to create vehicles
+	pthread_create(&create_vehicle, NULL, createVehicle, (void*)&args);
+
+	//create a thread to represent the captain of the ferry
+	pthread_t create_captain;
+	pthread_create(&create_captain, NULL, createCaptatin, NULL);
+
+
+
+
+	//pthread_join(create_captain,NULL);
+	pthread_join(create_vehicle, NULL);
+	pthread_join(create_captain,NULL);
+	return 0;
+}

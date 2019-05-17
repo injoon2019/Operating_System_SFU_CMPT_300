@@ -1,0 +1,95 @@
+
+    semopChecked(semID, &SignalSThiefPlay, 1);
+
+}
+
+void smaug() {
+
+    int newWakeup = 1;
+
+    pid_t localid = getpid();
+
+    smaugID = localid;
+
+    setpgid(smaugID, dragonGID);
+
+    semopChecked(semID, &WaitPDragonJewel, 1);
+
+    *numDragonJewel = INIT_JEWEL;
+
+    semopChecked(semID, &SignalPDragonJewel, 1);
+
+    semopChecked(semID, &WaitSDragonWakeUp, 1);
+
+    newWakeup = 1;
+
+    int time = 0;
+
+    for(; ;) { 
+
+        printf("Smaug %d has been woken up\n", smaugID);
+        int max_zombie = 0;
+
+        while (max_zombie < ZOMBIE_MAX) {
+            max_zombie++;
+
+            int onceThief = 0;
+
+            int onceHunter = 0;
+
+            semopChecked(semID, &WaitPThiefPath, 1);
+
+            while(*numThiefPath > 0 && onceThief < THIEF_ONCE) {
+
+                if(newWakeup==1) newWakeup = 0;
+
+                else semopChecked(semID, &WaitSDragonWakeUp, 1);
+
+                printf("Smaug %d smells a thief\n", smaugID);
+
+                play(smaugID);
+
+                onceThief ++;
+
+            }
+            semopChecked(semID, &SignalPThiefPath, 1);
+
+            semopChecked(semID, &WaitPHunterPath, 1);
+
+            while(*numHunterPath > 0 && onceHunter < HUNTER_ONCE) {
+
+                if(newWakeup==1) newWakeup = 0;
+
+                else semopChecked(semID, &WaitSDragonWakeUp, 1);
+
+                printf("Smaug %d smells a treasure hunter\n", smaugID);
+
+                fight(smaugID);
+
+                onceHunter++;
+
+            }
+
+            semopChecked(semID, &SignalPHunterPath, 1);
+
+
+            if(onceHunter > 0 || onceThief > 0) {
+                continue;
+
+            }
+
+            else {
+                break;
+            }
+
+        }
+
+        printf("Smaug %d is going to sleep\n", smaugID);
+
+        semopChecked(semID, &WaitSDragonWakeUp, 1);
+
+        newWakeup = 1;
+
+    }
+
+}
